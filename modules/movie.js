@@ -1,18 +1,29 @@
 const axios = require('axios');
 
+const moviesCache = {};
+
 async function handleMovie(req, res) {
   const searchQuery = req.query.searchQuery;
 
-  const movieArr = await axios.get(`http://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&query=${searchQuery}`);
+  if (moviesCache[searchQuery] !== undefined) {
 
-  try {
+    res.status(200).send(moviesCache[searchQuery]);
 
-    const movieData = movieArr.data.results.map(item => new Movie(item));
-    res.status(200).send(movieData);
+  } else {
+    const movieArr = await axios.get(`http://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&query=${searchQuery}`);
 
-  } catch (error) {
-    errorHandler(error, res);
+    try {
+
+      const movieData = movieArr.data.results.map(item => new Movie(item));
+      moviesCache[searchQuery] = movieData;
+      res.status(200).send(movieData);
+
+    } catch (error) {
+      errorHandler(error, res);
+    }
+
   }
+
 }
 
 class Movie {
@@ -27,4 +38,4 @@ class Movie {
   }
 }
 
-module.exports = {handleMovie};
+module.exports = { handleMovie };
