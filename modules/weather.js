@@ -1,22 +1,28 @@
 const axios = require('axios');
 
+const weatherCache = {};
+
 async function handleWeather(req, res) {
   let searchQuery = req.query.searchQuery;
   let lat = req.query.lat;
   let lon = req.query.lon;
 
-  const cityArr = await axios.get(`https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.WEATHER_API_KEY}`);
+  if (weatherCache[searchQuery] !== undefined) {
 
-  try {
+    res.status(200).send(weatherCache[searchQuery]);
 
-    const cityData = cityArr.data.data.map(item => new Forecast(item));
-    res.status(200).send(cityData);
+  } else {
+    const cityArr = await axios.get(`https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.WEATHER_API_KEY}`);
 
-  } catch (error) {
+    try {
+      const cityData = cityArr.data.data.map(item => new Forecast(item));
+      weatherCache[searchQuery] = cityData;
+      res.status(200).send(cityData);
+    } catch (error) {
+      errorHandler(error, res);
+    }
 
-    errorHandler(error, res);
   }
-
 }
 
 
@@ -28,4 +34,4 @@ class Forecast {
   }
 }
 
-module.exports = {handleWeather};
+module.exports = { handleWeather };
